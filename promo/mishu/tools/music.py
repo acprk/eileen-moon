@@ -178,8 +178,9 @@ while t < END - 1e-6:
     t += BEAT
 for k in kicks:
     add(L, k, kick(0.95 if k >= 11 else 0.8))
-# exhibition hits: one per exhibit + the finale
-for t0 in [6.0, 7.0, 8.0, 9.0, 10.0]:
+# colour-block hits: one per plate (every beat 6.0–9.0), the mosaic (9.5) and the finale (10.25)
+PLATE_HITS = [6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.25]
+for t0 in PLATE_HITS:
     add(L, t0, kick(1.0))
     add(L, t0, noise_hit(0.5, 1500, 12000, 0.12), 0.35)
     add(REV, t0, noise_hit(0.5, 1500, 12000, 0.12), 0.4)
@@ -246,10 +247,10 @@ while t < END:
     add(arp, t, pluck(m, 0.3, 1.0, 1.6 if t >= 46 else 1.0), g)
     t += BEAT / 2
     step += 1
-# exhibition: a bright motif on each exhibit
-for t0, m in [(6.0, 69), (7.0, 72), (8.0, 76), (9.0, 79), (10.0, 81)]:
+# colour blocks: a rising motif, one note group per plate
+for t0, m in zip(PLATE_HITS, [69, 72, 74, 76, 79, 81, 84, 86, 81]):
     for k, dm in enumerate([0, 7, 12]):
-        add(arp, t0 + k * 0.125, pluck(m + dm, 0.5, 1.0, 1.4), 0.16)
+        add(arp, t0 + k * 0.08, pluck(m + dm, 0.4, 1.0, 1.4), 0.14)
 L += arp * (0.6 + 0.4 * duck)
 REV += arp * 0.5
 
@@ -279,7 +280,7 @@ ui = [(T(1, 1.2), 1320), (T(1, 4.6), 1760), (T(1, 6.0), 1980), (T(1, 7.3), 2640)
       (T(3, 1.0), 1760), (T(3, 1.05), 2640), (T(3, 2.4), 1320), (T(3, 4.45), 2200), (T(3, 5.6), 2640), (T(3, 5.75), 3520),
       (T(4, 1.4), 1320), (T(4, 1.65), 1480), (T(4, 1.9), 1760), (T(4, 6.3), 2200), (T(4, 6.8), 2640)]
 ui += [(T(5, 0.2 + k * 0.24), 2640 + 220 * (k % 4)) for k in range(8)]
-ui += [(6.2, 2640), (7.2, 2640), (8.2, 2640), (9.2, 2640), (10.25, 3300)]
+ui += [(9.5 + i * 0.04, 2200 + 180 * i) for i in range(7)]   # mosaic tiles landing
 for t0, f in ui:
     add(L, t0, blip(f, 0.1), 0.16)
     add(REV, t0, blip(f, 0.1), 0.12)

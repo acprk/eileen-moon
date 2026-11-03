@@ -1,0 +1,14 @@
+node_modules/
+.entries/
+out/
+stills/
+output/
+public/audio/*
+!public/audio/.gitkeep
+audio/
+ref.mp4
+ref_frames/
+work/asr.json
+*.wav
+*.mp3
+*.webm

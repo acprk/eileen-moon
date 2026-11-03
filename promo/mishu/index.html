@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>米麦 MIME TECH · 产品使用说明</title>
+<style>
+  html,body{margin:0;background:#000;overflow:hidden}
+  canvas{display:block;width:1920px;height:1080px}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="film.js"></script>
+<script>
+  // preview mode: open index.html?play in a browser (served over http) to watch in real time
+  if (location.search.includes('play')) {
+    boot().then(() => {
+      const t0 = performance.now();
+      const loop = () => { const t = ((performance.now() - t0) / 1000) % DUR; render(t); requestAnimationFrame(loop); };
+      loop();
+    });
+  }
+</script>
+</body>
+</html>

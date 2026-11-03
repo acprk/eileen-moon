@@ -42,18 +42,18 @@ if (args.stills) {
   const page = await newPage();
   const shots = [];
   for (const t of times) shots.push(await grab(page, t));
-  const sheet = await page.evaluate(async ([shots, times, cols, scale]) => {
+  const sheet = await page.evaluate(async ([shots, times, cols, scale, nolabel]) => {
     const w = 1920 * scale, h = 1080 * scale, rows = Math.ceil(shots.length / cols);
     const c = document.createElement('canvas'); c.width = w * cols; c.height = h * rows;
     const x = c.getContext('2d');
     for (let i = 0; i < shots.length; i++) {
       const im = new Image(); im.src = shots[i]; await im.decode();
       x.drawImage(im, (i % cols) * w, Math.floor(i / cols) * h, w, h);
-      x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect((i % cols) * w, Math.floor(i / cols) * h, 90, 30);
+      if (nolabel) continue; x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect((i % cols) * w, Math.floor(i / cols) * h, 90, 30);
       x.fillStyle = '#ff0'; x.font = '20px monospace'; x.fillText(times[i].toFixed(2), (i % cols) * w + 8, Math.floor(i / cols) * h + 22);
     }
     return c.toDataURL('image/jpeg', 0.9);
-  }, [shots, times, cols, scale]);
+  }, [shots, times, cols, scale, !!args.nolabel]);
   fs.writeFileSync(args.out || 'sheet.jpg', Buffer.from(sheet.split(',')[1], 'base64'));
   console.log('wrote', args.out || 'sheet.jpg');
 }

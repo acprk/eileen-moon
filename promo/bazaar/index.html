@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>米麦集市 MIME BAZAAR</title>
+<style>
+  html,body{margin:0;background:#000;overflow:hidden}
+  canvas{display:block;width:1920px;height:1080px}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<!-- drawing library (face, icons, coins, logo, fonts, boot) shared with the MiShu promo -->
+<script src="../mishu/film.js"></script>
+<!-- this film's timeline; it defines its own render(t) -->
+<script src="bazaar.js"></script>
+<script>
+  if (location.search.includes('play')) {
+    boot().then(() => {
+      const t0 = performance.now();
+      const loop = () => { render(((performance.now() - t0) / 1000) % 60); requestAnimationFrame(loop); };
+      loop();
+    });
+  }
+</script>
+</body>
+</html>

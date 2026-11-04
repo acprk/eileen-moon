@@ -170,19 +170,22 @@ function frontFace(c, x, y, s, t, o = {}) {
   const a = o.alpha === undefined ? 1 : o.alpha;
   if (a <= 0) return;
   c.save(); c.translate(x, y); c.scale(s * 1.6, s * 1.6); c.translate(0, -20); c.globalAlpha *= a;
-  const SK = '#f4c9ab', SK2 = '#e6ad8d', H1 = '#3b2c72', H0 = '#18113a';
+  // optional palette (o.skin, o.hair, o.top) and o.short for short hair; defaults are the original heroine
+  const SK = o.skin || '#f4c9ab', SK2 = o.skin ? rgb(mix(hex(o.skin), [150, 80, 60], 0.16)) : '#e6ad8d';
+  const H0 = o.hair || '#18113a', H1 = o.hair ? rgb(mix(hex(o.hair), [255, 255, 255], 0.18)) : '#3b2c72';
   const sway = Math.sin(t * 1.4) * 2.5;
   // back hair
   let g = c.createLinearGradient(0, -130, 0, 190); g.addColorStop(0, H1); g.addColorStop(1, H0);
+  c.save(); if (o.short) { c.beginPath(); c.rect(-200, -200, 400, 226); c.clip(); }
   c.beginPath(); c.moveTo(0, -128);
   c.bezierCurveTo(-72, -128, -114, -88, -116, -20); c.bezierCurveTo(-118, 50, -110, 120, -120 + sway, 182);
   c.quadraticCurveTo(-80, 198, -40, 172); c.lineTo(40, 172); c.quadraticCurveTo(80, 198, 120 + sway, 182);
   c.bezierCurveTo(110, 120, 118, 50, 116, -20); c.bezierCurveTo(114, -88, 72, -128, 0, -128); c.closePath();
-  c.fillStyle = g; c.fill();
+  c.fillStyle = g; c.fill(); c.restore();
   // shoulders, V-neck top
   c.beginPath(); c.moveTo(-160, 236); c.bezierCurveTo(-150, 164, -96, 138, -32, 132); c.lineTo(0, 182); c.lineTo(32, 132);
   c.bezierCurveTo(96, 138, 150, 164, 160, 236); c.closePath();
-  g = c.createLinearGradient(0, 130, 0, 236); g.addColorStop(0, '#24337e'); g.addColorStop(1, '#0e1540'); c.fillStyle = g; c.fill();
+  g = c.createLinearGradient(0, 130, 0, 236); g.addColorStop(0, o.top || '#24337e'); g.addColorStop(1, o.top ? rgb(mix(hex(o.top), [0, 0, 0], 0.55)) : '#0e1540'); c.fillStyle = g; c.fill();
   c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-32, 132); c.lineTo(0, 182); c.lineTo(32, 132); c.stroke();
   // neck + V
   c.beginPath(); c.moveTo(-22, 66); c.lineTo(-25, 128); c.lineTo(-32, 132); c.lineTo(0, 180); c.lineTo(32, 132); c.lineTo(25, 128); c.lineTo(22, 66); c.closePath();
@@ -240,6 +243,7 @@ function frontFace(c, x, y, s, t, o = {}) {
   c.beginPath(); c.moveTo(-82, -40); c.bezierCurveTo(-90, -112, -40, -136, 0, -134); c.bezierCurveTo(40, -136, 90, -112, 82, -40);
   c.bezierCurveTo(70, -72, 40, -86, 0, -86); c.bezierCurveTo(-40, -86, -70, -72, -82, -40); c.closePath();
   c.fillStyle = g; c.fill();
+  c.save(); if (o.short) { c.beginPath(); c.rect(-200, -200, 400, 214); c.clip(); }
   for (const sd of [-1, 1]) {
     c.beginPath(); c.moveTo(2 * sd, -100);
     c.bezierCurveTo(-26 * sd, -86, -58 * sd, -62, -72 * sd, -12);
@@ -253,6 +257,7 @@ function frontFace(c, x, y, s, t, o = {}) {
     c.beginPath(); c.moveTo(-88 * sd, -40); c.quadraticCurveTo(-94 * sd, 30, -100 * sd, 110);
     c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 2; c.stroke();
   }
+  c.restore();
   // scan mesh
   if (o.mesh) {
     const m = o.mesh;

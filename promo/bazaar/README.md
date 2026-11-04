@@ -33,3 +33,20 @@ node tools/render.mjs --page bazaar/index.html --video mime_bazaar.mp4 --audio b
 
 - `bazaar.js` 是本片的时间线。它在 `../mishu/film.js` 之后加载，复用那里的绘图库（人像 `frontFace`、商品图标 `plateIcon`、金币、logo、字体与 `boot()`），再定义自己的 `render(t)`。
 - `tools/music.py`：配乐和音效，包括木琴式琶音、打字声、剪彩声、货物落架声、金币声、收银声。
+
+## 商业版（`commercial.html` / `commercial.js`）
+
+按 [`../REFERENCES.md`](../REFERENCES.md) 中第 1、2、5、8 号参考重做：
+
+- **调性（参考 1）：** 近黑的深色底，只用金色一个点缀色。画面上没有进度条、步骤编号、时间码，文案每句只有几个字。
+- **一个形状，从不硬切（参考 2）：** 同一个元素依次变成：肖像 / 声音 / 经验 / 作品卡 → 价签 → 开店按钮 → 店名输入框 → 店铺卡 → 上传区 → 商品卡（光标拖动价格滑块）→ 授权开关（开关圆钮的两条边各走一条弹簧，所以会拉伸）→ 上架 → 集市里的一格 → 搜索栏 → 商品详情 → 托管胶囊 → 店主同意 → 交付 → 金币。全程用闭式弹簧曲线，镜头推近到每个状态撑满画面。
+- **叙事（参考 5）：** 为什么（都是价值）→ 痛点（被随意复制、被随意使用，收入 ¥0）→ 解决（米麦集市：开店、上架、被看见、托管、你点头才交付）→ 你得到什么（每一次使用都是一笔收入）→ 每个人都能开一家店 → logo、标语、网址。
+- **结算高潮（参考 8）：** 蓄力（金币抖动、能量往里吸、边缘漏光）→ 爆发（柔光不超过 0.8、三层冲击波、流光、金币迸射）→ 揭晓（收入卡沿弧线飞出，数字滚动到 +¥1,950，服务费 ¥50 即 2.5%）→ 结算（10 枚金币沿曲线飞进余额，每到一枚余额就跳一下）。
+- **声音：** 每个出现的元素配一个轻音效，鼓点在 15 秒切进产品时落下。共用合成库在 `../tools/synth.py`，本片配乐在 `tools/music_commercial.py`。
+- **运动模糊：** `--blur 4` 每帧平均 4 个子帧（180° 快门）。
+
+```bash
+python3 -I bazaar/tools/music_commercial.py cm.wav
+node tools/render.mjs --page bazaar/commercial.html --stills 1,5,10,17,22,27,31,36,38,43,49,57 --out sheet.jpg
+node tools/render.mjs --page bazaar/commercial.html --video mime_bazaar_commercial.mp4 --audio cm.wav --workers 4 --blur 4
+```

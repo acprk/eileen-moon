@@ -34,7 +34,20 @@ async function newPage() {
   await page.evaluate(() => boot());
   return page;
 }
-const grab = (page, t, q = 0.95) => page.evaluate(([t, q]) => { render(t); return document.getElementById('c').toDataURL('image/jpeg', q); }, [t, q]);
+// --blur N: motion blur by averaging N sub-frames spread over a 180° shutter (half a frame), running mean on a canvas
+const BLUR = Math.max(1, Number(args.blur || 1));
+const grab = (page, t, q = 0.95) => page.evaluate(([t, q, n, fps]) => {
+  const cv = document.getElementById('c');
+  if (n <= 1) { render(t); return cv.toDataURL('image/jpeg', q); }
+  const acc = window.__acc || (window.__acc = Object.assign(document.createElement('canvas'), { width: cv.width, height: cv.height }));
+  const a = acc.getContext('2d');
+  for (let i = 0; i < n; i++) {
+    render(t + (i / n) * (0.5 / fps));
+    a.globalAlpha = 1 / (i + 1); a.drawImage(cv, 0, 0);
+  }
+  a.globalAlpha = 1;
+  return acc.toDataURL('image/jpeg', q);
+}, [t, q, BLUR, 30]);
 
 if (args.stills) {
   const times = String(args.stills).split(',').map(Number);

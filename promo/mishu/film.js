@@ -625,12 +625,60 @@ function stage1(c, lt, w, h) {
   // done chip
   const u = E.outBack(seg(lt, 7.3, 7.9));
   if (u > 0) {
-    c.save(); c.translate(vx, 500); c.scale(u, u);
+    c.save(); c.translate(vx, 480); c.scale(u, u);
     c.shadowColor = 'rgba(18,26,70,.25)'; c.shadowBlur = 24; c.shadowOffsetY = 10;
     fillRR(c, -170, -32, 340, 64, 32, NAVY); c.shadowColor = 'transparent';
     circle(c, -132, 0, 18, MINT); check(c, -132, 1, 0.9, NAVY, 3.5);
     txt(c, '确权完成', 10, 10, { font: F(900, 26, CJK), align: 'center', color: '#fff', ls: 4 });
     c.restore();
+  }
+  // the four assets now owned (icon row)
+  const ICONS = ['face', 'voice', 'exp', 'vase'], NAMES = ['肖像', '声音', '经验', '文化资产'];
+  ICONS.forEach((k, i) => {
+    const q = E.outBack(seg(lt, 7.8 + i * 0.12, 8.2 + i * 0.12));
+    if (q <= 0) return;
+    const x = vx - 226 + i * 118, y = 572;
+    c.save(); c.translate(x, y); c.scale(q, q);
+    fillRR(c, -26, -26, 52, 52, 14, i === 0 ? BLUE : i === 1 ? NAVY : i === 2 ? '#ff5a3c' : '#fdfcf8');
+    rr(c, -26, -26, 52, 52, 14); c.strokeStyle = 'rgba(18,26,70,.2)'; c.lineWidth = 1; c.stroke();
+    c.save(); rr(c, -26, -26, 52, 52, 14); c.clip(); plateIcon(c, k, 0, k === 'face' ? 14 : 0, 0.13, lt, i === 3 ? '#14286e' : '#ffffff'); c.restore();
+    circle(c, 22, -22, 9, MINT); check(c, 22, -21.5, 0.45, NAVY, 2.4);
+    c.restore();
+    txt(c, NAMES[i], x + 34, y + 6, { font: F(700, 14, CJK), color: NAVY, alpha: clamp(q) });
+  });
+  // upload list (before the vault arrives)
+  const ul = E.outExpo(seg(lt, 0.6, 1.2)) * (1 - seg(lt, 3.9, 4.3));
+  if (ul > 0) {
+    const ux = 620 + (1 - ul) * 40, uy = 70, uw = 470;
+    c.save(); c.globalAlpha = ul;
+    c.save(); c.shadowColor = 'rgba(18,26,70,.18)'; c.shadowBlur = 30; c.shadowOffsetY = 12; fillRR(c, ux, uy, uw, 400, 20, '#ffffff'); c.restore();
+    txt(c, '上传到米麦', ux + 28, uy + 46, { font: F(900, 22, CJK), color: NAVY });
+    txt(c, '4 项 · 本地加密后上传', ux + uw - 28, uy + 46, { font: F(600, 14, CJK), color: 'rgba(18,26,70,.5)', align: 'right' });
+    const files = [['face', '正脸肖像.jpg', '4.2 MB', BLUE, '#fff'], ['voice', '声音样本.wav', '12.8 MB', NAVY, '#fff'], ['exp', '表演经验课程.pdf', '1.1 MB', '#ff5a3c', '#fff'], ['vase', '青花瓷数字藏品.glb', '36 MB', '#f4efe4', '#14286e']];
+    files.forEach(([ic, name, size, bg, fg], i) => {
+      const y = uy + 88 + i * 74;
+      const pr = clamp((lt - 1.0 - i * 0.3) / 1.6);
+      fillRR(c, ux + 22, y, uw - 44, 60, 14, 'rgba(18,26,70,.04)');
+      fillRR(c, ux + 34, y + 10, 40, 40, 10, bg);
+      c.save(); rr(c, ux + 34, y + 10, 40, 40, 10); c.clip(); plateIcon(c, ic, ux + 54, y + 30 + (ic === 'face' ? 10 : 0), 0.1, lt, fg); c.restore();
+      txt(c, name, ux + 88, y + 26, { font: F(700, 16, CJK), color: NAVY });
+      txt(c, size, ux + 88, y + 46, { font: F(500, 13, MONO), color: 'rgba(18,26,70,.5)' });
+      fillRR(c, ux + 230, y + 38, 160, 6, 3, 'rgba(18,26,70,.1)');
+      fillRR(c, ux + 230, y + 38, 160 * pr, 6, 3, pr >= 1 ? MINT : BLUE);
+      if (pr >= 1) { circle(c, ux + uw - 50, y + 30, 13, MINT); check(c, ux + uw - 50, y + 31, 0.6, NAVY, 2.6); }
+      else txt(c, `${Math.round(pr * 100)}%`, ux + uw - 36, y + 34, { font: F(700, 14, MONO), color: BLUE, align: 'right' });
+    });
+    c.restore();
+  }
+  // device status (scan readout)
+  const sr = seg(lt, 1.0, 1.4) * (1 - seg(lt, 3.2, 3.6));
+  if (sr > 0) {
+    c.save(); c.globalAlpha = sr;
+    fillRR(c, 380, 66, 150, 34, 17, 'rgba(255,255,255,.14)');
+    circle(c, 400, 83, 6, (Math.floor(lt * 4) % 2) ? MINT : 'rgba(25,227,166,.4)');
+    txt(c, `识别中 ${Math.round(seg(lt, 1.2, 3.0) * 100)}%`, 416, 89, { font: F(700, 15, CJK), color: '#fff' });
+    c.restore();
+    txt(c, `关键点 ${Math.round(28 * seg(lt, 1.6, 2.4))} / 28`, 70, h - 60, { font: F(600, 14, CJK), color: 'rgba(255,255,255,.7)', alpha: sr });
   }
 }
 
@@ -682,7 +730,7 @@ function stage2(c, lt, w, h) {
     const d = 0.7 + (a.i + a.j) * 0.06;
     const u = a.hero ? 1 : E.outBack(seg(lt, d, d + 0.5));
     if (u <= 0) continue;
-    const hh = a.hero ? lerp(24, 170, heroU) : a.h * u;
+    const hh = a.hero ? lerp(24, 128, heroU) : a.h * u;
     const q = a.hero ? 0.38 : 0.32, i = a.i, j = a.j;
     if (a.hero) {
       const pul = 0.5 + 0.5 * Math.sin(lt * 4);
@@ -721,7 +769,7 @@ function stage2(c, lt, w, h) {
     c.save(); c.globalAlpha = clamp(heroU);
     const beam = c.createLinearGradient(0, ty - 170, 0, ty); beam.addColorStop(0, 'rgba(107,92,255,0)'); beam.addColorStop(1, 'rgba(107,92,255,.35)');
     c.fillStyle = beam; c.beginPath(); c.moveTo(tx - 40, ty); c.lineTo(tx + 40, ty); c.lineTo(tx + 70, ty - 170); c.lineTo(tx - 70, ty - 170); c.closePath(); c.fill();
-    frontFace(c, tx, ty - 104 + Math.sin(lt * 2) * 4, 0.24, lt, {});
+    frontFace(c, tx, ty - 92 + Math.sin(lt * 2) * 4, 0.22, lt, {});
     c.restore();
   }
   c.restore();
@@ -777,6 +825,34 @@ function stage2(c, lt, w, h) {
       circle(c, bx, by, 9, '#ff4f8b'); circle(c, bx, by, 18, 'rgba(255,79,139,.25)');
     }
   }
+  // live deals ticker
+  const tu = seg(lt, 0.8, 1.4);
+  if (tu > 0) {
+    c.save(); c.globalAlpha = tu;
+    fillRR(c, 0, h - 46, w, 46, 0, 'rgba(29,22,64,.88)');
+    fillRR(c, 16, h - 36, 92, 26, 13, '#ff4f8b');
+    txt(c, '最新成交', 62, h - 18, { font: F(800, 14, CJK), align: 'center' });
+    c.beginPath(); c.rect(120, h - 46, w - 120, 46); c.clip();
+    const deals = ['星河影业 购买「林夏 · 面部」使用权 ×1  +¥2,000', '青禾广告 购买「声音样本」使用权 ×3  +¥2,400', '北辰游戏 购买「虚拟形象」使用权 ×1  +¥1,500',
+      '博物馆文创 购买「青花瓷数字藏品」使用权 ×2  +¥7,600', '新锐工作室 购买「表演经验课程」使用权 ×5  +¥6,000'];
+    const str = deals.join('      ·      ') + '      ·      ';
+    c.font = F(600, 15, CJK); const sw = c.measureText(str).width;
+    const off = -((lt * 90) % sw);
+    for (const ox of [off, off + sw]) txt(c, str, 130 + ox, h - 17, { font: F(600, 15, CJK), color: 'rgba(255,255,255,.88)' });
+    c.restore();
+  }
+  // market bar: search + categories
+  const mb = E.outExpo(seg(lt, 0.3, 1.0));
+  if (mb > 0) {
+    c.save(); c.globalAlpha = mb; c.translate(0, (1 - mb) * -20);
+    c.save(); c.shadowColor = 'rgba(50,30,150,.18)'; c.shadowBlur = 20; c.shadowOffsetY = 6; fillRR(c, 24, 20, 640, 52, 26, 'rgba(255,255,255,.92)'); c.restore();
+    ring(c, 54, 46, 9, '#6b5cff', 2.4); line(c, 61, 53, 67, 59, '#6b5cff', 2.4);
+    txt(c, '搜索肖像、声音、经验、文化资产…', 78, 52, { font: F(500, 15, CJK), color: '#8a83b5' });
+    const cats = ['全部', '肖像', '声音', '经验', '文化资产'];
+    let cx = 340;
+    cats.forEach((s, i) => { const wd = tw(c, s, F(700, 14, CJK)) + 24; fillRR(c, cx, 32, wd, 28, 14, i === 1 ? '#6b5cff' : '#efecfb'); txt(c, s, cx + wd / 2, 51, { font: F(700, 14, CJK), align: 'center', color: i === 1 ? '#fff' : '#4a4080' }); cx += wd + 8; });
+    c.restore();
+  }
 }
 
 /* ───────────────────────── 03 · your yes (glassmorphism) ───────────────────────── */
@@ -817,7 +893,19 @@ function stage3(c, lt, w, h) {
   txt(c, '9:41', PX + 34, PY + 34, { font: F(700, 15) });
   mark(c, PX + 28, PY + 66, 26);
   txt(c, '米麦', PX + 76, PY + 88, { font: F(900, 24, CJK) });
-  for (let i = 0; i < 3; i++) { fillRR(c, PX + 24, PY + 300 + i * 64, PW - 48, 50, 14, 'rgba(255,255,255,.08)'); fillRR(c, PX + 40, PY + 316 + i * 64, 120, 8, 4, 'rgba(255,255,255,.22)'); fillRR(c, PX + 40, PY + 330 + i * 64, 70, 6, 3, 'rgba(255,255,255,.12)'); }
+  // today's summary + approval history
+  fillRR(c, PX + 24, PY + 252, PW - 48, 40, 12, 'rgba(255,255,255,.1)');
+  txt(c, '今日收益', PX + 40, PY + 278, { font: F(600, 14, CJK), color: 'rgba(255,255,255,.7)' });
+  txt(c, '¥ 3,600', PX + PW - 40, PY + 279, { font: F(800, 17), align: 'right', color: '#ffd9a0' });
+  const hist = [['青禾广告 · 声音', '已同意', '+¥800', '#19d68c'], ['北辰游戏 · 虚拟形象', '已拒绝', '—', '#ff6b81'], ['博物馆文创 · 文化资产', '已同意', '+¥3,800', '#19d68c']];
+  hist.forEach(([n, s, m, col], i) => {
+    const y = PY + 304 + i * 64;
+    fillRR(c, PX + 24, y, PW - 48, 54, 14, 'rgba(255,255,255,.08)');
+    circle(c, PX + 46, y + 27, 6, col);
+    txt(c, n, PX + 62, y + 24, { font: F(700, 14, CJK) });
+    txt(c, s, PX + 62, y + 43, { font: F(500, 12, CJK), color: 'rgba(255,255,255,.6)' });
+    txt(c, m, PX + PW - 40, y + 33, { font: F(800, 15), align: 'right', color: m === '—' ? 'rgba(255,255,255,.5)' : '#ffd9a0' });
+  });
   c.restore();
   const nu = E.outBack(seg(lt, 1.0, 1.6));
   const ny = PY + 128 + (1 - nu) * -90;
@@ -888,6 +976,19 @@ function stage3(c, lt, w, h) {
     // generation progress then paid
     const gp = seg(lt, 6.2, 7.6);
     const rx = DX + 360;
+    // request details, shown while it waits for your yes
+    const dq = seg(lt, 1.2, 1.7) * (1 - seg(lt, 5.6, 6.0));
+    if (dq > 0) {
+      const rows = [['用途', '广告短片'], ['时长', '15 秒'], ['投放', '全网 · 30 天'], ['授权', '1 次'], ['报酬', '¥ 2,000']];
+      rows.forEach(([k, v], i) => {
+        const y = DY + 148 + i * 52;
+        c.save(); c.globalAlpha *= dq * seg(lt, 1.2 + i * 0.1, 1.6 + i * 0.1);
+        fillRR(c, rx, y - 26, 170, 42, 10, 'rgba(255,255,255,.1)');
+        txt(c, k, rx + 14, y, { font: F(500, 13, CJK), color: 'rgba(255,255,255,.6)' });
+        txt(c, v, rx + 158, y, { font: F(800, 15, CJK), align: 'right', color: i === 4 ? '#ffd9a0' : '#fff' });
+        c.restore();
+      });
+    }
     if (lt > 6.0) {
       txt(c, gp < 1 ? '生成中' : '已交付', rx, DY + 150, { font: F(800, 20, CJK), alpha: seg(lt, 6.0, 6.3) });
       fillRR(c, rx, DY + 166, 170, 8, 4, 'rgba(255,255,255,.2)'); fillRR(c, rx, DY + 166, 170 * gp, 8, 4, '#ff8bd0');
@@ -982,6 +1083,26 @@ function stage4(c, lt, w, h) {
   const ttl = Math.max(0, 47 * 3600 + 59 * 60 + 12 - Math.floor(lt * 37));
   const hh = String(Math.floor(ttl / 3600)).padStart(2, '0'), mm = String(Math.floor(ttl / 60) % 60).padStart(2, '0'), ss = String(ttl % 60).padStart(2, '0');
   txt(c, `${hh}:${mm}:${ss}`, 34, h - 50, { font: F(600, 36, MONO), color: '#e8fdff', alpha: ru });
+  txt(c, '本次授权剩余', 34, h - 96, { font: F(600, 13, CJK), color: 'rgba(63,232,255,.6)', ls: 2, alpha: ru });
+  // header above the licensees
+  const hu = seg(lt, 1.2, 1.8);
+  txt(c, `使用方 ${revoked ? 2 : 3}`, 740, 76, { font: F(800, 18, CJK), color: '#e8fdff', alpha: hu });
+  txt(c, '本月收益 ¥ 15,200', 1100, 76, { font: F(800, 18, CJK), color: '#ffd27a', align: 'right', alpha: hu });
+  line(c, 740, 88, 1100, 88, `rgba(63,232,255,${0.3 * hu})`, 1);
+  // usage log, newest first
+  const lg = seg(lt, 2.0, 2.5);
+  if (lg > 0) {
+    const LOG = [[2.0, '14:02  星河影业  使用 1 次  +¥2,000'], [3.0, '14:05  青禾广告  使用 1 次  +¥800'], [5.0, '14:07  北辰游戏  授权已撤销'], [6.3, '14:09  星河影业  续期 48 小时']];
+    const shown = LOG.filter(([at]) => lt >= at).reverse().slice(0, 3);
+    c.save(); c.globalAlpha = lg;
+    txt(c, '实时记录', 260, h - 96, { font: F(600, 13, CJK), color: 'rgba(63,232,255,.6)', ls: 2 });
+    shown.forEach(([at, s], i) => {
+      const nu = seg(lt, at, at + 0.3);
+      const col = s.includes('撤销') ? '#ff6b81' : s.includes('续期') ? TEAL : '#e8fdff';
+      txt(c, s, 260, h - 68 + i * 22 - (1 - nu) * 10, { font: F(600, 14, CJK), color: col, alpha: (i === 0 ? nu : 0.75) * (1 - i * 0.25) });
+    });
+    c.restore();
+  }
   const bu = E.outExpo(seg(lt, 6.8, 7.4));
   if (bu > 0) {
     c.save(); c.globalAlpha = bu;
@@ -1034,10 +1155,19 @@ function stage5(c, lt, w, h) {
     txt(c, '每一次，都记在你的账上', root.x, root.y - 36, { font: F(800, 18, CJK), align: 'center', color: '#ffe3a8', alpha: rU, ls: 2 });
   }
   // value curve
-  const X0 = 640, X1 = 1090, Y0 = 500, Y1 = 200;
+  const X0 = 660, X1 = 1090, Y0 = 500, Y1 = 290;
   const cu = E.inOutCubic(seg(lt, 1.0, 4.8));
   line(c, X0, Y0, X1, Y0, 'rgba(255,255,255,.25)', 1.5);
-  for (let k = 1; k <= 3; k++) line(c, X0, Y0 - k * 100, X1, Y0 - k * 100, 'rgba(255,255,255,.06)', 1);
+  for (let k = 1; k <= 3; k++) {
+    const y = lerp(Y0, Y1, k / 3);
+    line(c, X0, y, X1, y, 'rgba(255,255,255,.07)', 1);
+    txt(c, `${Math.round(128.6 * k / 3)}K`, X0 - 10, y + 5, { font: F(500, 12, MONO), color: 'rgba(255,255,255,.45)', align: 'right' });
+  }
+  for (let m = 1; m <= 12; m += 1) {
+    const x = lerp(X0, X1, (m - 0.5) / 12);
+    line(c, x, Y0, x, Y0 + 5, 'rgba(255,255,255,.25)', 1);
+    if (m % 3 === 0 || m === 1) txt(c, `${m}月`, x, Y0 + 22, { font: F(500, 12, CJK), color: 'rgba(255,255,255,.5)', align: 'center' });
+  }
   const fx = (u) => Math.pow(u, 2.1) * 0.92 + 0.04 * Math.sin(u * 14) * u;
   c.save(); c.beginPath(); c.rect(X0, 0, (X1 - X0) * cu, h); c.clip();
   c.beginPath(); c.moveTo(X0, Y0);
@@ -1058,6 +1188,25 @@ function stage5(c, lt, w, h) {
   const val = Math.floor(128600 * E.outCubic(seg(lt, 1.0, 4.8)) / 10) * 10;
   txt(c, '你的收益', X0, 100, { font: F(700, 20, CJK), color: 'rgba(255,255,255,.65)', alpha: seg(lt, 0.8, 1.2), ls: 2 });
   txt(c, `¥ ${val.toLocaleString()}`, X0, 168, { font: F(900, 64), color: '#fff', glow: 'rgba(242,184,75,.7)', glowR: 24, alpha: seg(lt, 0.8, 1.2) });
+  txt(c, `+${Math.round(36 * seg(lt, 1.0, 4.8))}% 环比`, X0 + 104, 100, { font: F(800, 16, CJK), color: '#19d68c', alpha: seg(lt, 1.2, 1.6) });
+  txt(c, `使用 ${Math.round(1284 * seg(lt, 1.0, 4.8)).toLocaleString()} 次`, X1, 100, { font: F(700, 16, CJK), color: 'rgba(255,255,255,.7)', align: 'right', alpha: seg(lt, 1.2, 1.6) });
+  // where it comes from
+  const SRC = [['肖像', 0.38, '#4d7bff'], ['声音', 0.2, '#19e3a6'], ['虚拟形象', 0.14, '#9b86ff'], ['经验', 0.12, '#ff5a3c'], ['文化资产', 0.1, '#5f8cff'], ['作品', 0.06, '#ffc934']];
+  const su = E.outCubic(seg(lt, 1.6, 2.6));
+  if (su > 0) {
+    let x = X0;
+    SRC.forEach(([n, p, col], i) => {
+      const wd = (X1 - X0) * p * su;
+      fillRR(c, x, 190, Math.max(0, wd - 3), 12, 3, col);
+      x += wd;
+    });
+    SRC.forEach(([n, p, col], i) => {
+      const s = `${n} ${Math.round(p * 100)}%`;
+      const lx = X0 + (i % 3) * 146, ly2 = 228 + Math.floor(i / 3) * 22;
+      circle(c, lx + 5, ly2 - 5, 5, col);
+      txt(c, s, lx + 15, ly2, { font: F(600, 13, CJK), color: 'rgba(255,255,255,.75)', alpha: su });
+    });
+  }
   const lu = seg(lt, root.at + 0.2, root.at + 0.8);
   if (lu > 0) {
     c.save(); c.setLineDash([6, 6]); c.lineDashOffset = -lt * 40;
@@ -1089,6 +1238,23 @@ function intro(t) {
     ctx.font = F(900, 62, CJK); ctx.letterSpacing = '10px'; x += ctx.measureText(ch).width;
   });
   txt(ctx, 'mimuseai.com', W / 2, 840, { font: F(500, 22, MONO), align: 'center', ls: 4, color: 'rgba(200,220,255,.75)', alpha: seg(t, 4.3, 4.8) });
+  // museum wayfinding
+  const wf = seg(t, 0.4, 1.2);
+  if (wf > 0) {
+    ctx.save(); ctx.globalAlpha *= wf;
+    line(ctx, 64, 60, 64, 132, 'rgba(214,178,104,.8)', 2);
+    txt(ctx, 'MIMUSE', 84, 84, { font: F(800, 22), ls: 8, color: '#e8d3a2' });
+    txt(ctx, '灵感博物馆', 84, 114, { font: F(700, 20, CJK), ls: 6, color: '#ffffff' });
+    txt(ctx, 'HALL 01 · 数字资产馆', 84, 138, { font: F(500, 14, CJK), ls: 2, color: 'rgba(200,215,255,.6)' });
+    txt(ctx, '开放中 · OPEN 24H', W - 64, 84, { font: F(600, 15, CJK), align: 'right', ls: 2, color: 'rgba(200,215,255,.7)' });
+    circle(ctx, W - 64 - tw(ctx, '开放中 · OPEN 24H', F(600, 15, CJK), 2) - 14, 79, 5, '#19d68c');
+    const n = Math.floor(128000 + t * 101);
+    txt(ctx, '馆藏数字资产', 64, H - 92, { font: F(600, 14, CJK), ls: 3, color: 'rgba(200,215,255,.6)' });
+    txt(ctx, `${n.toLocaleString()} 件`, 64, H - 56, { font: F(800, 30), color: '#ffffff' });
+    const cats = ['肖像', '声音', '虚拟形象', '经验', '文化资产', '作品', '灵感'];
+    txt(ctx, cats.join('  ·  '), W - 64, H - 60, { font: F(600, 15, CJK), align: 'right', ls: 2, color: 'rgba(200,215,255,.6)' });
+    ctx.restore();
+  }
   ctx.restore();
 }
 
@@ -1184,14 +1350,67 @@ function plateIcon(c, kind, x, y, s, t, fg) {
 }
 // The colour-block section (V1 style, more items): one plate per beat, each with its own wipe.
 const PLATES = [
-  { a: 6.0, zh: '一张脸', en: 'A FACE', bg: '#2a3cf2', fg: '#ffffff', ghost: 'FACE', icon: 'face', tr: 'up' },
-  { a: 6.5, zh: '一段声音', en: 'A VOICE', bg: '#0b0d18', fg: '#ffffff', ghost: 'VOICE', icon: 'voice', tr: 'split' },
-  { a: 7.0, zh: '一个虚拟形象', en: 'A DIGITAL AVATAR', bg: '#19e3a6', fg: '#0b0d18', ghost: 'AVATAR', icon: 'avatar', tr: 'diag' },
-  { a: 7.5, zh: '一段经验', en: 'YOUR EXPERIENCE', bg: '#ff5a3c', fg: '#ffffff', ghost: 'SKILLS', icon: 'exp', tr: 'iris' },
-  { a: 8.0, zh: '一件文化数字资产', en: 'CULTURAL DIGITAL ASSETS', bg: '#f4efe4', fg: '#14286e', ghost: 'CULTURE', icon: 'vase', tr: 'left' },
-  { a: 8.5, zh: '一幅作品', en: 'A WORK OF ART', bg: '#7a3cff', fg: '#ffffff', ghost: 'ARTWORK', icon: 'art', tr: 'split' },
-  { a: 9.0, zh: '一个灵感', en: 'A SPARK OF MUSE', bg: '#ffc934', fg: '#0b0d18', ghost: 'MUSE', icon: 'spark', tr: 'diag' },
+  { a: 6.0, zh: '一张脸', en: 'A FACE', bg: '#2a3cf2', fg: '#ffffff', badge: '#ffc934', ghost: 'FACE', icon: 'face', tr: 'up', price: '2,000', kind: '肖像', file: '正脸肖像 · 4096×4096' },
+  { a: 6.5, zh: '一段声音', en: 'A VOICE', bg: '#0b0d18', fg: '#ffffff', badge: '#19e3a6', ghost: 'VOICE', icon: 'voice', tr: 'split', price: '800', kind: '声纹', file: '声音样本 · 48 kHz · 3′20″' },
+  { a: 7.0, zh: '一个虚拟形象', en: 'A DIGITAL AVATAR', bg: '#19e3a6', fg: '#0b0d18', badge: '#0b0d18', ghost: 'AVATAR', icon: 'avatar', tr: 'diag', price: '1,500', kind: '虚拟形象', file: '3D 模型 · 120K 面' },
+  { a: 7.5, zh: '一段经验', en: 'YOUR EXPERIENCE', bg: '#ff5a3c', fg: '#ffffff', badge: '#0b0d18', ghost: 'SKILLS', icon: 'exp', tr: 'iris', price: '1,200', kind: '经验', file: '表演课程 · 12 节' },
+  { a: 8.0, zh: '一件文化数字资产', en: 'CULTURAL DIGITAL ASSETS', bg: '#f4efe4', fg: '#14286e', badge: '#14286e', ghost: 'CULTURE', icon: 'vase', tr: 'left', price: '3,800', kind: '文化资产', file: '青花瓷数字藏品 · 1/500' },
+  { a: 8.5, zh: '一幅作品', en: 'A WORK OF ART', bg: '#7a3cff', fg: '#ffffff', badge: '#ffc934', ghost: 'ARTWORK', icon: 'art', tr: 'split', price: '2,600', kind: '作品', file: '数字绘画 · 8K' },
+  { a: 9.0, zh: '一个灵感', en: 'A SPARK OF MUSE', bg: '#ffc934', fg: '#0b0d18', badge: '#0b0d18', ghost: 'MUSE', icon: 'spark', tr: 'diag', price: '600', kind: '灵感', file: '创意提案 · 草图 6 张' },
 ];
+// print-style details around every plate: grid, crop marks, asset record, barcode, price badge, tags
+function plateDetails(it, k, t, lt) {
+  const fg = it.fg, a = E.outCubic(seg(lt, 0.06, 0.3));
+  ctx.save(); ctx.globalAlpha = 0.06 * a; ctx.strokeStyle = fg; ctx.lineWidth = 1;
+  for (let i = 1; i < 12; i++) { const x = (W / 12) * i; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+  ctx.restore();
+  ctx.save(); ctx.globalAlpha = 0.55 * a; ctx.strokeStyle = fg; ctx.lineWidth = 1.5;
+  for (const [x, y, sx, sy] of [[30, 30, 1, 1], [W - 30, 30, -1, 1], [30, H - 30, 1, -1], [W - 30, H - 30, -1, -1]]) {
+    ctx.beginPath(); ctx.moveTo(x, y + sy * 22); ctx.lineTo(x, y); ctx.lineTo(x + sx * 22, y); ctx.stroke();
+  }
+  ctx.restore();
+  // asset record (bottom right)
+  const rx = W - 80, ry = H - 168;
+  const rec = [['ASSET', `MM-2026-${String(10482 + k * 37).padStart(6, '0')}`], ['类型', it.kind], ['内容', it.file], ['状态', '已确权 · 可授权']];
+  rec.forEach(([kk, v], i) => {
+    const u = seg(lt, 0.12 + i * 0.04, 0.3 + i * 0.04);
+    txt(ctx, kk, rx - 330, ry + i * 26, { font: F(600, 13, MONO), color: fg, alpha: 0.5 * u, ls: 2 });
+    txt(ctx, v, rx, ry + i * 26, { font: F(600, 15, i === 2 ? CJK : i === 0 ? MONO : CJK), color: fg, alpha: 0.85 * u, align: 'right' });
+  });
+  // barcode
+  ctx.save(); ctx.globalAlpha = 0.7 * a; ctx.fillStyle = fg;
+  let bx = rx - 330;
+  for (let i = 0; i < 46; i++) { const w = 1 + ((hash(i * 7 + k * 13) * 3) | 0); if (i % 2 === 0) ctx.fillRect(bx, ry - 60, w, 30); bx += w + 1.5; }
+  ctx.restore();
+  // tags under the English line
+  const tags = ['可确权', '可授权', '可变现'];
+  const ty = it.icon === 'face' ? 680 : 830, tx0 = it.icon === 'face' ? 1016 : W / 2 - 180;
+  tags.forEach((s, i) => {
+    const u = E.outBack(seg(lt, 0.16 + i * 0.05, 0.34 + i * 0.05));
+    if (u <= 0) return;
+    const x = tx0 + i * 124;
+    ctx.save(); ctx.translate(x + 54, ty); ctx.scale(u, u);
+    rr(ctx, -54, -19, 108, 38, 19); ctx.strokeStyle = fg; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.8; ctx.stroke();
+    ctx.globalAlpha = 1; check(ctx, -30, 1, 0.55, fg, 2.4);
+    txt(ctx, s, 10, 7, { font: F(800, 17, CJK), color: fg, align: 'center' });
+    ctx.restore();
+  });
+  // price badge
+  const pu = E.outBack(seg(lt, 0.1, 0.32));
+  if (pu > 0) {
+    const [px, py] = it.icon === 'face' ? [1640, 300] : [1420, 330];
+    ctx.save(); ctx.translate(px, py); ctx.rotate(-0.12 + Math.sin(t * 3) * 0.02); ctx.scale(pu, pu);
+    ctx.beginPath(); for (let i = 0; i < 48; i++) { const r = i % 2 ? 96 : 106, an = i * Math.PI / 24; ctx.lineTo(Math.cos(an) * r, Math.sin(an) * r); } ctx.closePath();
+    ctx.fillStyle = it.badge; ctx.fill();
+    const tc = it.badge === '#ffc934' || it.badge === '#19e3a6' ? '#0b0d18' : '#ffffff';
+    ring(ctx, 0, 0, 82, tc, 1.5);
+    txt(ctx, '使用权', 0, -30, { font: F(800, 18, CJK), color: tc, align: 'center', ls: 3 });
+    txt(ctx, `¥${it.price}`, 0, 18, { font: F(900, it.price.length > 4 ? 40 : 46), color: tc, align: 'center' });
+    txt(ctx, '/ 次', 0, 48, { font: F(700, 16, CJK), color: tc, align: 'center' });
+    ctx.restore();
+  }
+}
 function wipe(tr, u, fill) {
   ctx.fillStyle = fill;
   if (u >= 1) { ctx.fillRect(0, 0, W, H); return; }
@@ -1228,8 +1447,13 @@ function plate(it, k, t, lt) {
     ctx.restore();
   }
   ctx.restore();
+  plateDetails(it, k, t, lt);
   txt(ctx, `0${k + 1} / 07`, 80, H - 64, { font: F(600, 18, MONO), color: it.fg, alpha: 0.65 });
-  txt(ctx, '米麦 MIME TECH', W - 80, 92, { font: F(800, 18, CJK), color: it.fg, alpha: 0.65, align: 'right', ls: 3 });
+  // index dots: which plate of seven
+  for (let i = 0; i < 7; i++) circle(ctx, 190 + i * 18, H - 70, i === k ? 5 : 3, it.fg);
+  mark(ctx, W - 80 - 236, 70, 30);
+  txt(ctx, '米麦 MIME TECH', W - 80, 92, { font: F(800, 18, CJK), color: it.fg, alpha: 0.75, align: 'right', ls: 3 });
+  txt(ctx, 'mimuseai.com', 80, 92, { font: F(500, 16, MONO), color: it.fg, alpha: 0.55 });
 }
 // mosaic: every plate becomes a tile → "都是你的资产"
 const TILES = [[0, 0, 520, 540], [520, 0, 380, 540], [900, 0, 440, 540], [1340, 0, 580, 540], [0, 540, 700, 540], [700, 540, 480, 540], [1180, 540, 740, 540]];
@@ -1244,6 +1468,8 @@ function mosaic(t, lt) {
     ctx.fillStyle = it.bg; ctx.fillRect(x, y, w, h);
     plateIcon(ctx, it.icon, x + w / 2, y + h / 2 - 30, Math.min(w, h) / 760, t, it.fg);
     txt(ctx, it.zh, x + 28, y + h - 30, { font: F(900, 30, CJK), color: it.fg, ls: 2 });
+    txt(ctx, `¥${it.price} / 次`, x + w - 28, y + 52, { font: F(800, 24), color: it.fg, align: 'right' });
+    txt(ctx, `0${i + 1}`, x + 28, y + 52, { font: F(600, 18, MONO), color: it.fg, alpha: 0.6 });
     ctx.restore();
   });
   const bu = E.outExpo(seg(lt, 0.22, 0.5));
@@ -1262,6 +1488,19 @@ function finale(t, lt) {
   txt(ctx, '在米麦，', W / 2, 500 + (1 - p) * 30, { font: F(700, 64, CJK), align: 'center', ls: 8, color: 'rgba(230,238,255,.9)', alpha: p });
   txt(ctx, '都可以成为商品', W / 2, 660 + (1 - p) * 30, { font: F(900, 150, CJK), align: 'center', ls: 12, alpha: p, glow: 'rgba(90,150,255,.7)', glowR: 30 });
   txt(ctx, 'ON MIME, EVERY ONE OF THEM CAN BE SOLD — AND STAYS YOURS', W / 2, 730, { font: F(700, 20), align: 'center', ls: 6, color: 'rgba(210,225,255,.75)', alpha: seg(lt, 0.2, 0.45) });
+  // the seven goods with their prices
+  PLATES.forEach((it, i) => {
+    const q = E.outBack(seg(lt, 0.15 + i * 0.04, 0.4 + i * 0.04));
+    if (q <= 0) return;
+    const x = W / 2 + (i - 3) * 200, y = 870;
+    ctx.save(); ctx.translate(x, y); ctx.scale(q, q);
+    fillRR(ctx, -84, -60, 168, 128, 18, it.bg);
+    rr(ctx, -84, -60, 168, 128, 18); ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.save(); rr(ctx, -84, -60, 168, 128, 18); ctx.clip(); plateIcon(ctx, it.icon, 0, it.icon === 'face' ? 0 : -14, 0.2, t, it.fg); ctx.restore();
+    txt(ctx, it.kind, -70, 54, { font: F(800, 15, CJK), color: it.fg });
+    txt(ctx, `¥${it.price}`, 70, 54, { font: F(800, 15), color: it.fg, align: 'right' });
+    ctx.restore();
+  });
 }
 function hook(t) {
   if (t < 6.0 || t >= 11.0) return;
@@ -1309,7 +1548,19 @@ function outro(t) {
     txt(ctx, 'mimuseai.com', W / 2, 870, { font: F(600, 26, MONO), align: 'center', ls: 2, color: '#e8f0ff' });
     ctx.restore();
   }
-  txt(ctx, '演示画面 · 部分能力为原型模拟实现', W / 2, H - 40, { font: F(400, 13, CJK), align: 'center', color: 'rgba(255,255,255,.32)', ls: 1, alpha: seg(t, 56, 56.5) });
+  // the seven kinds of assets, as a closing row
+  PLATES.forEach((it, i) => {
+    const q = E.outBack(seg(t, 55.9 + i * 0.07, 56.3 + i * 0.07));
+    if (q <= 0) return;
+    const x = W / 2 + (i - 3) * 124, y = 960;
+    ctx.save(); ctx.translate(x, y); ctx.scale(q, q);
+    fillRR(ctx, -30, -30, 60, 60, 16, it.bg);
+    rr(ctx, -30, -30, 60, 60, 16); ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.save(); rr(ctx, -30, -30, 60, 60, 16); ctx.clip(); plateIcon(ctx, it.icon, 0, it.icon === 'face' ? 16 : 0, 0.15, t, it.fg); ctx.restore();
+    ctx.restore();
+    txt(ctx, it.kind, x, y + 54, { font: F(600, 14, CJK), align: 'center', color: 'rgba(220,230,255,.7)', alpha: clamp(q) });
+  });
+  txt(ctx, '演示画面 · 部分能力为原型模拟实现', W / 2, H - 14, { font: F(400, 13, CJK), align: 'center', color: 'rgba(255,255,255,.32)', ls: 1, alpha: seg(t, 56, 56.5) });
   ctx.restore();
   const end = seg(t, 59.3, 60);
   if (end > 0) { ctx.fillStyle = `rgba(0,0,0,${end})`; ctx.fillRect(0, 0, W, H); }

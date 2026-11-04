@@ -479,34 +479,139 @@ const CHAPTERS = [
     steps: [['记录使用', 0.2], ['汇总入账', 2.2], ['收益增长', 3.0]] },
 ];
 const tcode = (sec) => `00:${String(Math.max(0, Math.floor(sec))).padStart(2, '0')}`;
+// Camera keyframes per chapter: [chapter time (s), zoom, focal x, focal y] — focal point in card pixels.
+// The camera pushes in on each chapter's key moment and the focal point is brought toward screen centre.
+const CAMS = {
+  1: [[0, 1, 570, 320], [1.2, 1, 570, 320], [1.7, 1.6, 300, 300], [2.7, 1.6, 300, 330], [3.2, 1, 570, 320], [3.7, 1, 570, 320], [4.2, 1.4, 880, 300], [5.0, 1.4, 880, 330], [5.5, 1, 570, 320], [6.1, 1, 570, 320], [6.5, 1.3, 760, 540], [7.5, 1.3, 760, 540], [8.0, 1, 570, 320]],
+  2: [[0, 1, 570, 320], [2.3, 1, 570, 320], [2.8, 1.5, 906, 290], [5.2, 1.5, 906, 300], [5.7, 1.25, 990, 190], [6.6, 1.25, 1000, 160], [7.1, 1, 570, 320]],
+  3: [[0, 1, 570, 320], [1.9, 1, 570, 320], [2.4, 1.5, 315, 330], [4.9, 1.5, 315, 390], [5.4, 1.38, 820, 300], [7.8, 1.38, 840, 300], [8.3, 1, 570, 320]],
+  4: [[0, 1, 570, 320], [3.0, 1, 570, 320], [3.5, 1.55, 930, 520], [5.1, 1.55, 930, 520], [5.6, 1, 570, 320]],
+  5: [[0, 1, 570, 320], [1.0, 1, 570, 320], [1.5, 1.5, 860, 200], [3.6, 1.5, 880, 260], [4.2, 1, 570, 320]],
+};
+function camAt(n, lt) {
+  const K = CAMS[n];
+  if (lt >= K[K.length - 1][0]) return K[K.length - 1].slice(1);
+  let i = 0; while (lt > K[i + 1][0]) i++;
+  const [a, z0, x0, y0] = K[i], [b, z1, x1, y1] = K[i + 1];
+  const u = E.inOutCubic(seg(lt, a, b));
+  return [lerp(z0, z1, u), lerp(x0, x1, u), lerp(y0, y1, u)];
+}
+// Draw a card image with a true perspective rotation about its vertical axis (rotY), using vertical strips:
+// every strip is scaled by its own depth, so the near edge is taller than the far edge.
+// (fx, fy) is the card point placed at screen (px, py); hc is the height of the card body (the rest is the caption).
+let STAGE = null;
+function drawCard3D(img, cw, hc, px, py, zoom, fx, fy, rotY, rotZ, alpha) {
+  const w = cw, h = img.height, f = 1700, N = 60, sw = w / N;
+  const cs = Math.cos(rotY), sn = Math.sin(rotY);
+  if (cs <= 0.03 || alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  ctx.translate(px, py); ctx.rotate(rotZ); ctx.scale(zoom, zoom);
+  // origin = focal point; the strip maths is about the card's own centre
+  const ccx = w / 2 - fx, ccy = h / 2 - fy;
+  ctx.translate(ccx, ccy);
+  const P = (x) => { const s = f / (f + x * sn); return [x * cs * s, s]; };
+  const [lx, ls] = P(-w / 2), [rx, rs] = P(w / 2);
+  const top = -h / 2, bot = -h / 2 + hc;
+  const quad = () => { ctx.beginPath(); ctx.moveTo(lx, top * ls); ctx.lineTo(rx, top * rs); ctx.lineTo(rx, bot * rs); ctx.lineTo(lx, bot * ls); ctx.closePath(); };
+  ctx.save(); quad(); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 90; ctx.shadowOffsetY = 40; ctx.fillStyle = 'rgba(0,0,0,.9)'; ctx.fill(); ctx.restore();
+  for (let i = 0; i < N; i++) {
+    const x0 = -w / 2 + i * sw, x1 = x0 + sw;
+    const [X0, s0] = P(x0), [X1, s1] = P(x1);
+    const s = (s0 + s1) / 2;
+    ctx.drawImage(img, i * sw, 0, sw, h, X0, -h / 2 * s, X1 - X0 + 0.9, h * s);
+  }
+  // light: the edge turned toward the viewer catches a soft sheen
+  const g = ctx.createLinearGradient(lx, 0, rx, 0);
+  g.addColorStop(0, `rgba(255,255,255,${Math.max(0, -sn) * 0.16})`); g.addColorStop(1, `rgba(255,255,255,${Math.max(0, sn) * 0.16})`);
+  quad(); ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
+}
+// Ambient layer behind every chapter: perspective floor, floating asset tokens, a settlement network, ghost type.
+const TOKENS = (() => { const r = rng(77), a = []; for (let i = 0; i < 30; i++) a.push({ x: r() * (W + 300), y: 60 + r() * (H - 120), z: 0.3 + r() * 0.7, k: (r() * 7) | 0, sp: 0.4 + r() * 0.8, ph: r() * 6 }); return a.sort((p, q) => p.z - q.z); })();
+const NODES = [[90, 140], [420, 70], [980, 60], [1500, 90], [1840, 200], [1860, 620], [1700, 990], [1180, 1030], [600, 1010], [70, 880], [40, 520]];
+const LINKS = [[0, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7], [6, 8], [7, 9], [8, 10], [9, 0], [10, 1], [2, 7], [3, 8]];
+const KW = { 1: 'MINT', 2: 'MARKET', 3: 'CONSENT', 4: 'CONTROL', 5: 'VALUE' };
+function chapterBg(t) {
+  const a = seg(t, 10.8, 11.6) * (1 - seg(t, 52.6, 53.2));
+  if (a <= 0) return;
+  const [A, B] = sceneCol(t);
+  const tint = mix(A, [255, 255, 255], 0.4);
+  ctx.save(); ctx.globalAlpha = a;
+  // perspective floor grid
+  const VX = W / 2, VY = H * 0.56;
+  ctx.save(); ctx.beginPath(); ctx.rect(0, VY, W, H - VY); ctx.clip();
+  for (let k = -14; k <= 14; k++) { const x = VX + k * 260; line(ctx, VX + k * 10, VY, x, H, rgb(tint, 0.09), 1); }
+  for (let k = 0; k < 14; k++) {
+    const z = ((k - t * 1.4) % 14 + 14) % 14 + 0.6;
+    const y = VY + 360 / z;
+    if (y > H) continue;
+    line(ctx, 0, y, W, y, rgb(tint, 0.13 * clamp(1.2 - z / 14)), 1);
+  }
+  const fg = ctx.createLinearGradient(0, VY, 0, VY + 200); fg.addColorStop(0, 'rgba(6,8,15,1)'); fg.addColorStop(1, 'rgba(6,8,15,0)');
+  ctx.fillStyle = fg; ctx.fillRect(0, VY, W, 200);
+  ctx.restore();
+  // ghost type: chapter keyword + big number
+  const ch = CHAPTERS.find(c => t >= c.a && t < c.b) || CHAPTERS[0];
+  ctx.save(); ctx.globalAlpha = a * 0.07; ctx.font = F(900, 340); ctx.letterSpacing = '-6px';
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5;
+  ctx.strokeText(KW[ch.n], 60 - ((t - ch.a) * 70), H - 30);
+  ctx.restore();
+  // settlement network: links with travelling payments and "+¥" pops at the receiving node
+  for (let i = 0; i < LINKS.length; i++) {
+    const [p, q] = LINKS[i], [x0, y0] = NODES[p], [x1, y1] = NODES[q];
+    const mx = (x0 + x1) / 2 + (y1 - y0) * 0.15, my = (y0 + y1) / 2 - (x1 - x0) * 0.15;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1); ctx.strokeStyle = rgb(tint, 0.07); ctx.lineWidth = 1; ctx.stroke();
+    const per = 2.4 + (i % 4) * 0.5, u = ((t + i * 0.37) % per) / per;
+    const bx = (1 - u) * (1 - u) * x0 + 2 * (1 - u) * u * mx + u * u * x1, by = (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * my + u * u * y1;
+    circle(ctx, bx, by, 3, 'rgba(255,214,120,.55)'); glowDisc(ctx, bx, by, 14, [255, 200, 90], 0.25);
+    const pop = ((t + i * 0.37) % per);
+    if (pop < 0.7) txt(ctx, `+¥${[800, 2000, 1500, 600, 3800, 1200, 2600][i % 7].toLocaleString()}`, x1, y1 - 14 - pop * 40, { font: F(800, 15), align: 'center', color: 'rgba(255,220,150,.75)', alpha: 1 - pop / 0.7 });
+  }
+  for (const [x, y] of NODES) { circle(ctx, x, y, 4, rgb(tint, 0.4)); ring(ctx, x, y, 9, rgb(tint, 0.18), 1); }
+  // floating asset tokens with prices, in depth layers
+  for (const tk of TOKENS) {
+    const x = ((tk.x + t * 26 * tk.sp * tk.z) % (W + 300)) - 150, y = tk.y + Math.sin(t * 0.6 + tk.ph) * 18 * tk.z;
+    const s = 74 * tk.z, it = PLATES[tk.k];
+    ctx.save(); ctx.globalAlpha = a * (0.1 + 0.32 * tk.z); ctx.translate(x, y); ctx.rotate(Math.sin(t * 0.4 + tk.ph) * 0.15);
+    fillRR(ctx, -s / 2, -s / 2, s, s, s * 0.24, it.bg);
+    ctx.save(); rr(ctx, -s / 2, -s / 2, s, s, s * 0.24); ctx.clip(); plateIcon(ctx, it.icon, 0, it.icon === 'face' ? s * 0.22 : 0, s / 420, t, it.fg); ctx.restore();
+    if (tk.z > 0.72) txt(ctx, `¥${it.price}`, 0, s / 2 + 18, { font: F(800, 14), align: 'center', color: '#ffffff' });
+    ctx.restore();
+  }
+  ctx.restore();
+}
 function drawChapter(ch, t) {
   const lt = t - ch.a, dur = ch.b - ch.a;
   if (lt < 0 || lt > dur) return;
   const slt = lt * ch.len / dur;           // stage time (stage choreography is authored on ch.len seconds)
   const inU = E.outExpo(seg(lt, 0, 0.9));
-  const outU = E.inCubic(seg(lt, dur - 0.45, dur));
+  const outU = E.inCubic(seg(lt, dur - 0.5, dur));
   const L = ch.side === 'L';
   const cardX0 = L ? 690 : 90;
   const textX = L ? 112 : 1296;
-  const dir = L ? 1 : -1;
-  const cx = cardX0 + dir * (1 - inU) * 160 - dir * outU * 220;
-  const sc = lerp(0.9, 1, inU) * lerp(1, 0.94, outU);
-  const al = clamp(inU * 1.4) * (1 - outU);
-  ctx.save();
-  ctx.globalAlpha = al;
-  ctx.translate(cx + CW / 2, CY + CHH / 2); ctx.scale(sc, sc); ctx.translate(-CW / 2, -CHH / 2);
-  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 90; ctx.shadowOffsetY = 36; fillRR(ctx, 0, 0, CW, CHH, 22, '#111'); ctx.restore();
-  ctx.save(); rr(ctx, 0, 0, CW, CHH, 22); ctx.clip(); ch.stage(ctx, slt, CW, CHH, ch); ctx.restore();
-  rr(ctx, 0.5, 0.5, CW - 1, CHH - 1, 22); ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1.5; ctx.stroke();
-  // caption bar under the card (V1)
+  const sgn = L ? 1 : -1;                    // card on the right turns its far edge right, and vice versa
+  // ── render the card (stage + caption bar) into an offscreen canvas
+  const sc = STAGE.getContext('2d');
+  sc.setTransform(1, 0, 0, 1, 0, 0); sc.clearRect(0, 0, STAGE.width, STAGE.height);
+  sc.save(); rr(sc, 0, 0, CW, CHH, 22); sc.clip(); ch.stage(sc, slt, CW, CHH, ch); sc.restore();
+  rr(sc, 0.5, 0.5, CW - 1, CHH - 1, 22); sc.strokeStyle = 'rgba(255,255,255,.16)'; sc.lineWidth = 1.5; sc.stroke();
   const acc = hex(ch.acc);
   const cur = ch.steps.reduce((k, s, i) => (slt >= s[1] ? i : k), 0);
-  circle(ctx, 8, CHH + 36, 5, rgb(acc, 0.5 + 0.5 * Math.abs(Math.sin(lt * 3.2))));
-  txt(ctx, `步骤 ${cur + 1}/${ch.steps.length} · ${ch.steps[cur][0]}`, 24, CHH + 42, { font: F(600, 16, CJK), color: 'rgba(255,255,255,.66)', ls: 1 });
-  txt(ctx, `${tcode(lt)} / ${tcode(dur)}`, CW, CHH + 42, { font: F(400, 15, MONO), color: 'rgba(255,255,255,.45)', align: 'right' });
-  ctx.restore();
+  circle(sc, 10, CHH + 36, 5, rgb(acc, 0.5 + 0.5 * Math.abs(Math.sin(lt * 3.2))));
+  txt(sc, `步骤 ${cur + 1}/${ch.steps.length} · ${ch.steps[cur][0]}`, 26, CHH + 42, { font: F(600, 16, CJK), color: 'rgba(255,255,255,.7)', ls: 1 });
+  txt(sc, `${tcode(lt)} / ${tcode(dur)}`, CW, CHH + 42, { font: F(400, 15, MONO), color: 'rgba(255,255,255,.45)', align: 'right' });
+  // ── camera: flip in, keep a slight 3D angle, push in on key moments, flip out
+  const [zoom, fx, fy] = camAt(ch.n, lt);
+  const zu = clamp((zoom - 1) / 0.55);
+  let rotY = sgn * (lerp(1.35, 0.24, inU) - 0.14 * seg(lt, 0.9, dur - 0.5)) * (1 - 0.75 * zu) + sgn * 1.45 * outU;
+  const rotZ = sgn * ((1 - inU) * 0.05 + Math.sin(lt * 0.7) * 0.006);
+  const natX = cardX0 + fx, natY = CY + fy;
+  const px = lerp(natX, W / 2 + sgn * 60, zu) + sgn * (1 - inU) * 120 + sgn * outU * 160;
+  const py = lerp(natY, H / 2 - 10, zu) + Math.sin(lt * 0.9) * 4;
+  drawCard3D(STAGE, CW, CHH, px, py, zoom * lerp(0.86, 1, inU) * lerp(1, 0.9, outU), fx, fy, rotY, rotZ, clamp(inU * 1.6) * (1 - outU * 0.6));
+  var textFade = clamp(1 - zu * 3.2);
   // text block (V1)
-  const el = (d) => { const u = E.outCubic(seg(lt, d, d + 0.55)); return { a: u * (1 - outU), y: (1 - u) * 26 - outU * 16 }; };
+  const el = (d) => { const u = E.outCubic(seg(lt, d, d + 0.55)); return { a: u * (1 - outU) * textFade, y: (1 - u) * 26 - outU * 16 }; };
   let e = el(0.15);
   txt(ctx, `0${ch.n}`, textX, 262 + e.y, { font: F(600, 36, MONO), color: ch.acc, alpha: e.a });
   txt(ctx, '/ 05', textX + 52, 262 + e.y, { font: F(400, 18, MONO), color: 'rgba(255,255,255,.4)', alpha: e.a });
@@ -1587,6 +1692,7 @@ function render(t) {
   background(t);
   intro(t);
   hook(t);
+  chapterBg(t);
   for (const ch of CHAPTERS) drawChapter(ch, t);
   outro(t);
   chrome(t);
@@ -1643,6 +1749,7 @@ async function boot() {
   for (let i = 0; i < id.data.length; i += 4) { const v = 128 + (r() - 0.5) * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
   g.putImageData(id, 0, 0);
   AUR = document.createElement('canvas'); AUR.width = CW; AUR.height = CHH;
+  STAGE = document.createElement('canvas'); STAGE.width = CW; STAGE.height = CHH + 60;
   NEB = makeNebula();
   ICO = makeIco();
   window.READY = true;

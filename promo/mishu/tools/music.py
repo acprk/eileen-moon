@@ -137,6 +137,36 @@ def blip(f, length=0.09, gain=1.0):
     return (np.sin(2 * np.pi * f * t) + 0.3 * np.sin(4 * np.pi * f * t)) * env_ad(n, 0.002, 0.03) * gain
 
 
+def coin_clink(f0=2600.0, gain=1.0):
+    """A struck coin: inharmonic partials with fast decays, a click, and a smaller second bounce."""
+    n = int(SR * 0.6)
+    t = np.arange(n) / SR
+    s = np.zeros(n)
+    for r, a, d in [(1.0, 1.0, 0.22), (1.62, 0.7, 0.16), (2.31, 0.5, 0.12), (2.97, 0.35, 0.09), (3.63, 0.25, 0.07)]:
+        s += a * np.sin(2 * np.pi * f0 * r * t + r) * np.exp(-t / d)
+    s += 0.6 * fft_filter(rs.standard_normal(n), 3000, None) * np.exp(-t / 0.003)
+    b = int(0.075 * SR)
+    s[b:] += 0.45 * s[: n - b] * np.exp(-t[: n - b] / 0.1)
+    return s / (np.max(np.abs(s)) + 1e-9) * gain
+
+
+def kaching(gain=1.0):
+    """Cash-register settlement: mechanical 'ka' click, a bright bell, and the drawer's low thud."""
+    n = int(SR * 1.4)
+    t = np.arange(n) / SR
+    s = np.zeros(n)
+    ka = fft_filter(rs.standard_normal(n), 1200, 5000) * np.exp(-t / 0.012)
+    s += 0.8 * ka
+    d = int(0.06 * SR)
+    bell = np.zeros(n)
+    for f, a, dc in [(1568, 1.0, 0.7), (3136, 0.55, 0.45), (4699, 0.3, 0.3), (2093, 0.45, 0.6)]:
+        bell += a * np.sin(2 * np.pi * f * t) * np.exp(-t / dc)
+    s[d:] += 0.7 * bell[: n - d]
+    th = 0.6 * np.sin(2 * np.pi * np.cumsum(90 + 60 * np.exp(-t / 0.03)) / SR) * np.exp(-t / 0.08)
+    s[int(0.02 * SR):] += th[: n - int(0.02 * SR)]
+    return s / (np.max(np.abs(s)) + 1e-9) * gain
+
+
 # ── pad (whole film), additive detuned saws, slow attack
 t_all = np.arange(N) / SR
 pad = np.zeros(N)
@@ -279,14 +309,32 @@ ui = [(T(1, 1.2), 1320), (T(1, 4.6), 1760), (T(1, 6.0), 1980), (T(1, 7.3), 2640)
       (T(2, 3.0), 1760), (T(2, 6.2), 2200), (T(2, 6.8), 3300), (T(2, 8.2), 2640),
       (T(3, 1.0), 1760), (T(3, 1.05), 2640), (T(3, 2.4), 1320), (T(3, 4.45), 2200), (T(3, 5.6), 2640), (T(3, 5.75), 3520),
       (T(4, 1.4), 1320), (T(4, 1.65), 1480), (T(4, 1.9), 1760), (T(4, 6.3), 2200), (T(4, 6.8), 2640)]
-ui += [(T(5, 0.2 + k * 0.24), 2640 + 220 * (k % 4)) for k in range(8)]
 ui += [(9.5 + i * 0.04, 2200 + 180 * i) for i in range(7)]   # mosaic tiles landing
 for t0, f in ui:
     add(L, t0, blip(f, 0.1), 0.16)
     add(REV, t0, blip(f, 0.1), 0.12)
-# coins (chapter 03 payout)
-for k in range(5):
-    add(L, T(3, 7.7) + k * 0.06, blip(3960 + k * 300, 0.12), 0.12)
+# ── money: coin clinks and settlement ka-chings on every payout moment
+def money(t0, kind='coin', g=1.0, f0=2600.0):
+    s = coin_clink(f0, 1.0) if kind == 'coin' else kaching(1.0)
+    add(L, t0, s, (0.22 if kind == 'coin' else 0.32) * g)
+    add(REV, t0, s, (0.10 if kind == 'coin' else 0.16) * g)
+for i, t0 in enumerate([6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]):          # price badge on each colour plate
+    money(t0 + 0.12, 'coin', 0.7, 2400 + 150 * i)
+money(10.3, 'kaching', 1.0)                                         # 在米麦，都可以成为商品
+money(T(2, 6.2), 'coin', 0.9, 2800)                                  # 申请使用 (purchase)
+money(T(3, 7.7), 'kaching', 1.1)                                     # +¥2,000 已到账
+for k in range(6):                                                   # the coins landing
+    money(T(3, 7.75) + 0.08 * k + 0.02 * (k % 2), 'coin', 0.75, 2300 + 260 * ((k * 3) % 5))
+money(T(4, 6.3), 'coin', 0.7, 3000)                                  # renewal paid
+for k in range(8):                                                   # chapter 05: each use drops a coin
+    money(T(5, 0.2 + k * 0.24), 'coin', 0.85, 2200 + 180 * (k % 5))
+money(T(5, 2.42), 'kaching', 1.0)                                    # into the ledger
+money(T(5, 4.8), 'kaching', 1.1)                                     # ¥128,600
+# camera push-ins (chapter time of each zoom start, see CAMS in film.js)
+for ch_, lt_ in [(1, 1.2), (1, 3.7), (1, 6.1), (2, 2.3), (3, 1.9), (4, 3.0), (5, 1.0)]:
+    a_, b_, ln_ = CH[ch_]
+    add(L, a_ + lt_, whoosh(0.55, 0.2))
+    add(REV, a_ + lt_, whoosh(0.55, 0.12))
 # revoke glitch (chapter 04)
 TR = T(4, 5.0)
 gl = np.zeros(int(0.5 * SR))

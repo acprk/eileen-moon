@@ -174,6 +174,8 @@ function frontFace(c, x, y, s, t, o = {}) {
   const SK = o.skin || '#f4c9ab', SK2 = o.skin ? rgb(mix(hex(o.skin), [150, 80, 60], 0.16)) : '#e6ad8d';
   const H0 = o.hair || '#18113a', H1 = o.hair ? rgb(mix(hex(o.hair), [255, 255, 255], 0.18)) : '#3b2c72';
   const sway = Math.sin(t * 1.4) * 2.5;
+  // o.hi (or window.FACE_HI): extra portrait detail — skin modelling, iris, lashes, hair strands, rim light
+  const hi = o.hi !== undefined ? o.hi : !!window.FACE_HI;
   // back hair
   let g = c.createLinearGradient(0, -130, 0, 190); g.addColorStop(0, H1); g.addColorStop(1, H0);
   c.save(); if (o.short) { c.beginPath(); c.rect(-200, -200, 400, 226); c.clip(); }
@@ -181,12 +183,26 @@ function frontFace(c, x, y, s, t, o = {}) {
   c.bezierCurveTo(-72, -128, -114, -88, -116, -20); c.bezierCurveTo(-118, 50, -110, 120, -120 + sway, 182);
   c.quadraticCurveTo(-80, 198, -40, 172); c.lineTo(40, 172); c.quadraticCurveTo(80, 198, 120 + sway, 182);
   c.bezierCurveTo(110, 120, 118, 50, 116, -20); c.bezierCurveTo(114, -88, 72, -128, 0, -128); c.closePath();
-  c.fillStyle = g; c.fill(); c.restore();
+  c.fillStyle = g; c.fill();
+  if (hi) {   // strands in the back hair
+    for (let k = 0; k < 18; k++) {
+      const sd = k % 2 ? 1 : -1, q = (k >> 1) / 9;
+      c.beginPath(); c.moveTo(sd * (20 + q * 60), -124 + q * 20);
+      c.bezierCurveTo(sd * (90 + q * 20), -100, sd * (112 + q * 6), 40, sd * (104 + q * 14) + sway, 176);
+      c.strokeStyle = `rgba(255,255,255,${0.05 + 0.05 * ((k * 7) % 3)})`; c.lineWidth = 1; c.stroke();
+    }
+  }
+  c.restore();
   // shoulders, V-neck top
   c.beginPath(); c.moveTo(-160, 236); c.bezierCurveTo(-150, 164, -96, 138, -32, 132); c.lineTo(0, 182); c.lineTo(32, 132);
   c.bezierCurveTo(96, 138, 150, 164, 160, 236); c.closePath();
   g = c.createLinearGradient(0, 130, 0, 236); g.addColorStop(0, o.top || '#24337e'); g.addColorStop(1, o.top ? rgb(mix(hex(o.top), [0, 0, 0], 0.55)) : '#0e1540'); c.fillStyle = g; c.fill();
   c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-32, 132); c.lineTo(0, 182); c.lineTo(32, 132); c.stroke();
+  if (hi) {   // fabric folds and a soft shoulder highlight
+    c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 1.4;
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 60, 150); c.quadraticCurveTo(sd * 72, 190, sd * 64, 236); c.stroke(); c.beginPath(); c.moveTo(sd * 104, 160); c.quadraticCurveTo(sd * 112, 196, sd * 106, 236); c.stroke(); }
+    glowDisc(c, 110, 170, 40, [255, 255, 255], 0.1);
+  }
   // neck + V
   c.beginPath(); c.moveTo(-22, 66); c.lineTo(-25, 128); c.lineTo(-32, 132); c.lineTo(0, 180); c.lineTo(32, 132); c.lineTo(25, 128); c.lineTo(22, 66); c.closePath();
   g = c.createLinearGradient(0, 66, 0, 180); g.addColorStop(0, SK2); g.addColorStop(1, SK); c.fillStyle = g; c.fill();
@@ -194,7 +210,10 @@ function frontFace(c, x, y, s, t, o = {}) {
   c.beginPath(); c.moveTo(-24, 126); c.quadraticCurveTo(0, 158, 24, 126); c.strokeStyle = '#e8c26a'; c.lineWidth = 1.4; c.stroke();
   circle(c, 0, 151, 3.6, '#f6d47c');
   // ears + earrings
-  for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * 74, -8, 9, 16, 0, 0, 7); c.fillStyle = SK2; c.fill(); circle(c, sd * 75, 14, 3.4, '#f6d47c'); circle(c, sd * 75, 25, 4.4, '#f6d47c'); }
+  for (const sd of [-1, 1]) {
+    c.beginPath(); c.ellipse(sd * 74, -8, 9, 16, 0, 0, 7); c.fillStyle = SK2; c.fill(); circle(c, sd * 75, 14, 3.4, '#f6d47c'); circle(c, sd * 75, 25, 4.4, '#f6d47c');
+    if (hi) { circle(c, sd * 74, 23.5, 1.4, '#ffffff'); const tw2 = 0.5 + 0.5 * Math.sin(t * 3 + sd); glowDisc(c, sd * 74, 23.5, 7, [255, 245, 210], 0.5 * tw2); }
+  }
   // face
   facePath(c);
   g = c.createLinearGradient(0, -100, 0, 96); g.addColorStop(0, '#fadfc9'); g.addColorStop(1, SK); c.fillStyle = g; c.fill();
@@ -203,6 +222,16 @@ function frontFace(c, x, y, s, t, o = {}) {
   c.fillStyle = g; c.fillRect(-90, -110, 180, 220);
   glowDisc(c, -44, 30, 24, [255, 118, 130], 0.32); glowDisc(c, 44, 30, 24, [255, 118, 130], 0.32);
   glowDisc(c, -6, -64, 44, [255, 255, 255], 0.28);
+  if (hi) {
+    // modelling: cheekbone highlights, eye-socket and jaw shadows, nose shadow, a cool rim light on the right edge
+    glowDisc(c, -48, 8, 20, [255, 255, 255], 0.22); glowDisc(c, 48, 8, 20, [255, 255, 255], 0.16);
+    for (const sd of [-1, 1]) glowDisc(c, sd * 35, -18, 26, [170, 90, 90], 0.12);
+    const jg = c.createLinearGradient(-80, 0, 80, 0); jg.addColorStop(0, 'rgba(150,70,60,.18)'); jg.addColorStop(0.25, 'rgba(150,70,60,0)'); jg.addColorStop(0.78, 'rgba(150,70,60,0)'); jg.addColorStop(1, 'rgba(150,70,60,.22)');
+    c.fillStyle = jg; c.fillRect(-90, -110, 180, 220);
+    c.beginPath(); c.moveTo(9, -6); c.quadraticCurveTo(14, 12, 10, 24); c.lineTo(5, 24); c.quadraticCurveTo(9, 10, 5, -6); c.closePath(); c.fillStyle = 'rgba(160,80,70,.14)'; c.fill();
+    c.beginPath(); c.moveTo(-6, -8); c.quadraticCurveTo(-4, 8, -3, 18); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.6; c.stroke();
+    facePath(c); c.strokeStyle = 'rgba(170,200,255,.35)'; c.lineWidth = 2.5; c.save(); c.beginPath(); c.rect(30, -110, 60, 220); c.clip(); facePath(c); c.stroke(); c.restore();
+  }
   if (o.scan !== undefined && o.scan > 0 && o.scan < 1) {
     const sy = lerp(-110, 110, o.scan);
     const g3 = c.createLinearGradient(0, sy - 40, 0, sy); g3.addColorStop(0, 'rgba(25,227,166,0)'); g3.addColorStop(1, 'rgba(25,227,166,.55)');
@@ -216,13 +245,27 @@ function frontFace(c, x, y, s, t, o = {}) {
   const ph = (t + 0.7) % 3.2, close = ph < 0.14 ? Math.sin(Math.PI * ph / 0.14) : 0, open = 1 - close * 0.92;
   for (const sd of [-1, 1]) {
     c.save(); c.translate(sd * 35, -10); c.scale(1.22, 1.22 * open);
+    if (hi) glowDisc(c, 0, -8, 22, [190, 120, 160], 0.22);   // soft eyeshadow
     c.beginPath(); c.moveTo(-17, 0); c.quadraticCurveTo(0, -13, 17, 0); c.quadraticCurveTo(0, 10, -17, 0); c.fillStyle = '#fffaf6'; c.fill();
     c.save(); c.clip();
     const ig = c.createRadialGradient(0, 1, 1, 0, 1, 9.5); ig.addColorStop(0, '#7a5ab0'); ig.addColorStop(1, '#22163f');
-    circle(c, 0, 1, 9, ig); circle(c, 0, 1, 4, '#0e0820'); circle(c, -3, -2.5, 2.6, '#ffffff'); circle(c, 3.5, 3.5, 1.2, 'rgba(255,255,255,.7)');
+    circle(c, 0, 1, 9, ig);
+    if (hi) {   // iris fibres and a darker limbal ring
+      c.strokeStyle = 'rgba(200,170,255,.35)'; c.lineWidth = 0.6;
+      for (let k = 0; k < 16; k++) { const an = k * Math.PI / 8; c.beginPath(); c.moveTo(Math.cos(an) * 4.5, 1 + Math.sin(an) * 4.5); c.lineTo(Math.cos(an) * 8.2, 1 + Math.sin(an) * 8.2); c.stroke(); }
+      ring(c, 0, 1, 8.6, 'rgba(20,10,40,.8)', 1.2);
+      c.beginPath(); c.moveTo(-17, -1); c.quadraticCurveTo(0, -12, 17, -1); c.lineTo(17, -6); c.lineTo(-17, -6); c.closePath(); c.fillStyle = 'rgba(60,30,60,.18)'; c.fill();
+    }
+    circle(c, 0, 1, 4, '#0e0820'); circle(c, -3, -2.5, 2.6, '#ffffff'); circle(c, 3.5, 3.5, 1.2, 'rgba(255,255,255,.7)');
     c.restore();
     c.beginPath(); c.moveTo(-18, 1); c.quadraticCurveTo(0, -14.5, 18, -0.5); c.strokeStyle = '#1b1238'; c.lineWidth = 3.2; c.stroke();
     c.beginPath(); c.moveTo(16 * sd, -1.5); c.quadraticCurveTo(21 * sd, -3, 24 * sd, -7); c.lineWidth = 2.6; c.stroke();
+    if (hi) {   // individual lashes, upper and a few lower
+      c.lineWidth = 1.2; c.strokeStyle = '#1b1238';
+      for (let k = 0; k < 7; k++) { const u = -0.6 + k * 0.2, xx = u * 17 * sd + 4 * sd, yy = -10 + Math.abs(u) * 6; c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + 2.5 * sd, yy - 4.5); c.stroke(); }
+      c.strokeStyle = 'rgba(27,18,56,.45)'; c.lineWidth = 0.9;
+      for (let k = 0; k < 4; k++) { const xx = (4 + k * 3.5) * sd; c.beginPath(); c.moveTo(xx, 6.5 - k * 0.6); c.lineTo(xx + 1.2 * sd, 9.5 - k * 0.6); c.stroke(); }
+    }
     c.beginPath(); c.moveTo(-13, -9.5); c.quadraticCurveTo(0, -20, 15, -9); c.strokeStyle = 'rgba(130,70,80,.35)'; c.lineWidth = 1.3; c.stroke();
     c.restore();
   }
@@ -237,6 +280,10 @@ function frontFace(c, x, y, s, t, o = {}) {
   c.beginPath(); c.moveTo(-20, 46); c.quadraticCurveTo(0, 50, 20, 46); c.quadraticCurveTo(0, 64, -20, 46); c.fillStyle = g; c.fill();
   c.beginPath(); c.moveTo(-23, 44); c.quadraticCurveTo(-20, 47, -17, 47); c.moveTo(23, 44); c.quadraticCurveTo(20, 47, 17, 47); c.strokeStyle = 'rgba(170,70,80,.5)'; c.lineWidth = 1.4; c.stroke();
   c.beginPath(); c.ellipse(4, 54, 6, 2.2, 0, 0, 7); c.fillStyle = 'rgba(255,255,255,.45)'; c.fill();
+  if (hi) {   // lip line and the cupid's-bow highlight
+    c.beginPath(); c.moveTo(-19, 46.5); c.quadraticCurveTo(0, 50.5, 19, 46.5); c.strokeStyle = 'rgba(120,30,50,.55)'; c.lineWidth = 1.2; c.stroke();
+    c.beginPath(); c.moveTo(-8, 39.5); c.quadraticCurveTo(0, 37.5, 8, 39.5); c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1.1; c.stroke();
+  }
   // curtain bangs + front locks
   g = c.createLinearGradient(0, -134, 0, 140); g.addColorStop(0, H1); g.addColorStop(1, H0);
   // hair cap: brings the hairline down over the forehead
@@ -256,6 +303,15 @@ function frontFace(c, x, y, s, t, o = {}) {
     c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 3; c.stroke();
     c.beginPath(); c.moveTo(-88 * sd, -40); c.quadraticCurveTo(-94 * sd, 30, -100 * sd, 110);
     c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 2; c.stroke();
+    if (hi) {   // strands in the bangs and front locks
+      for (let k = 0; k < 9; k++) {
+        const q = k / 8;
+        c.beginPath(); c.moveTo((4 + q * 10) * sd, -110 - q * 10);
+        c.bezierCurveTo((-24 - q * 30) * sd, -96 + q * 6, (-62 - q * 20) * sd, -60, (-80 - q * 18 + sway) * sd, 60 + q * 70);
+        c.strokeStyle = `rgba(255,255,255,${0.06 + 0.06 * (k % 3)})`; c.lineWidth = 0.9; c.stroke();
+      }
+      c.beginPath(); c.moveTo(-30 * sd, -116); c.quadraticCurveTo(-50 * sd, -136 + sway, -64 * sd, -128); c.strokeStyle = 'rgba(60,44,110,.8)'; c.lineWidth = 1; c.stroke();   // a flyaway
+    }
   }
   c.restore();
   // scan mesh
@@ -1699,6 +1755,7 @@ function render(t) {
   hook(t);
   chapterBg(t);
   for (const ch of CHAPTERS) drawChapter(ch, t);
+  if (window.afterChapters) window.afterChapters(t);   // hook for overlays (v6 credits, spec callouts)
   outro(t);
   chrome(t);
   cutFlash(t);

@@ -588,5 +588,10 @@ function render(t) {
   opening(t); titleCard(t); plates(t); statement(t);
   step1(t); step2(t); step3(t); step4(t); step5(t);
   verbs(t); ending(t);
+  // dither: an invisible ±1-level grain, moved every frame, so the soft glows don't band after 8-bit encoding
+  ctx.save(); ctx.globalAlpha = 0.035; ctx.globalCompositeOperation = 'soft-light';
+  const gx = -((Math.floor(t * 30) * 137) % 512), gy = -((Math.floor(t * 30) * 251) % 512);
+  for (let y = gy; y < H; y += 512) for (let x = gx; x < W; x += 512) ctx.drawImage(GRAIN, x, y);
+  ctx.restore();
 }
 window.render = render;

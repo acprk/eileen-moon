@@ -383,6 +383,7 @@ const MS_COPY = [
   [46.6, 53.0, '密码保护资产，', 960, 900, 72, 'center'], [47.4, 53.0, '数学生长价值。', 960, 1000, 72, 'center', CM.goldHi],
 ];
 function msCopy(t) {
+  if (window.CM_NOCOPY) return;   // the 9:16 compositor lays the copy out itself
   for (const [a, b, s, x, y, size, align, col] of MS_COPY) {
     if (t < a - 0.1 || t > b + 0.6) continue;
     cmType(s, x, y, a, t, { size, align, color: col, out: b, stag: size > 60 ? 0.04 : 0.025 });

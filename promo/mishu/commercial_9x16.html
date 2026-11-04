@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>米麦 MIME TECH · 商业版 9:16</title>
+<style>html,body{margin:0;background:#000}#c{display:none}#v{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<canvas id="v" width="1080" height="1920"></canvas>
+<script src="film.js"></script>
+<script src="../lib/cmkit.js"></script>
+<script src="commercial.js"></script>
+<script>
+  // framing window: [t, centre x, width] in 16:9 pixels
+  window.VCFG = {
+    copy: MS_COPY, brand: '米麦 MIME TECH',
+    crop: [[0, 1320, 1080], [7.6, 1320, 1080], [8.2, 1300, 1300], [13.8, 1300, 1300], [14.2, 960, 1120], [36.8, 960, 1120],
+      [37.2, 1235, 1330], [45.8, 1235, 1330], [46.2, 960, 1720], [53.4, 960, 1720], [53.8, 960, 1140]],
+  };
+</script>
+<script src="../lib/vertical.js"></script>
+</body>
+</html>

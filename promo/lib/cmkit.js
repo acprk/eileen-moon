@@ -39,6 +39,8 @@ const cmEnter = (S, t) => clamp((t - S.t0 - 0.1) / 0.22) * (1 - clamp((t - (S.t1
 function cmType(s, x, y, t0, t, o = {}) {
   const size = o.size || 64, font = F(o.w || 900, size, CJK), ls = o.ls === undefined ? 2 : o.ls;
   const out = o.out === undefined ? 1e9 : o.out;
+  // o.ctx: draw on another canvas (the 9:16 compositor); default is the film's own canvas
+  const ctx = o.ctx || document.getElementById('c').getContext('2d');
   ctx.save(); ctx.font = font; ctx.letterSpacing = ls + 'px';
   const total = ctx.measureText(s).width;
   let cx = o.align === 'center' ? x - total / 2 : o.align === 'right' ? x - total : x;

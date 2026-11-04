@@ -330,6 +330,7 @@ const CM_COPY = [
   [46.6, 52.6, '每个人，', 960, 860, 72, 'center'], [47.3, 52.6, '都能开一家店。', 960, 960, 72, 'center', CM.goldHi],
 ];
 function cmCopy(t) {
+  if (window.CM_NOCOPY) return;   // the 9:16 compositor lays the copy out itself
   for (const [a, b, s, x, y, size, align, col] of CM_COPY) {
     if (t < a - 0.1 || t > b + 0.6) continue;
     cmType(s, x, y, a, t, { size, align, color: col, out: b, stag: size > 60 ? 0.04 : 0.025 });

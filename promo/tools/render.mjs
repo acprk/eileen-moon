@@ -36,18 +36,20 @@ async function newPage() {
 }
 // --blur N: motion blur by averaging N sub-frames spread over a 180° shutter (half a frame), running mean on a canvas
 const BLUR = Math.max(1, Number(args.blur || 1));
-const grab = (page, t, q = 0.95) => page.evaluate(([t, q, n, fps]) => {
-  const cv = document.getElementById('c');
-  if (n <= 1) { render(t); return cv.toDataURL('image/jpeg', q); }
+// --fn / --canvas: which draw function to call and which canvas to capture (e.g. renderV + v for the 9:16 compositor)
+const FN = String(args.fn || 'render'), CANVAS = String(args.canvas || 'c');
+const grab = (page, t, q = 0.95) => page.evaluate(([t, q, n, fps, fn, id]) => {
+  const cv = document.getElementById(id), draw = window[fn];
+  if (n <= 1) { draw(t); return cv.toDataURL('image/jpeg', q); }
   const acc = window.__acc || (window.__acc = Object.assign(document.createElement('canvas'), { width: cv.width, height: cv.height }));
   const a = acc.getContext('2d');
   for (let i = 0; i < n; i++) {
-    render(t + (i / n) * (0.5 / fps));
+    draw(t + (i / n) * (0.5 / fps));
     a.globalAlpha = 1 / (i + 1); a.drawImage(cv, 0, 0);
   }
   a.globalAlpha = 1;
   return acc.toDataURL('image/jpeg', q);
-}, [t, q, BLUR, 30]);
+}, [t, q, BLUR, 30, FN, CANVAS]);
 
 if (args.stills) {
   const times = String(args.stills).split(',').map(Number);
@@ -56,7 +58,8 @@ if (args.stills) {
   const shots = [];
   for (const t of times) shots.push(await grab(page, t));
   const sheet = await page.evaluate(async ([shots, times, cols, scale, nolabel]) => {
-    const w = 1920 * scale, h = 1080 * scale, rows = Math.ceil(shots.length / cols);
+    const first = new Image(); first.src = shots[0]; await first.decode();
+    const w = first.width * scale, h = first.height * scale, rows = Math.ceil(shots.length / cols);
     const c = document.createElement('canvas'); c.width = w * cols; c.height = h * rows;
     const x = c.getContext('2d');
     for (let i = 0; i < shots.length; i++) {
